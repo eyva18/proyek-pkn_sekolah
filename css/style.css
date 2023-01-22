@@ -627,20 +627,11 @@ ul.dropdown-menu li {
   padding: 10px 30px;
 }
 
-.banner-1 {
-  background: url("../images/banner/bg-2.jpg");
-  background-size: cover;
-  position: relative;
-}
-
-.banner-2 {
-  background: url("../images/banner/slider-3.jpg");
-  background-size: cover;
-  position: relative;
-}
-
 .banner-3 {
-  background: url("../picture/home-page/banner-bg.jpg");
+	background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+	background-size: 400% 400%;
+	-webkit-animation: gradient 15s ease infinite;
+	        animation: gradient 15s ease infinite;
   background-size: cover;
   position: relative;
 }
