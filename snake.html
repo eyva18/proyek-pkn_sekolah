@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snake Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 500px;
+      padding: 10px;
+      position: relative;
+    }
+
+    canvas {
+      border: 1px solid white;
+      width: 100%;
+      height: auto;
+      max-width: 400px;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 20px auto;
+      max-width: 300px;
+      width: 100%;
+    }
+
+    button {
+      padding: 20px;
+      background: #4CAF50;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 10px;
+      font-size: 20px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active {
+      background: #45a049;
+      transform: scale(0.95);
+    }
+
+    .score-container {
+      color: white;
+      text-align: center;
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+    }
+
+    .score {
+      font-size: clamp(18px, 5vw, 24px);
+      margin-bottom: 5px;
+    }
+
+    .high-score {
+      font-size: clamp(14px, 4vw, 18px);
+      color: #ffd700;
+    }
+
+    .score-popup {
+      position: absolute;
+      color: #ffd700;
+      font-weight: bold;
+      pointer-events: none;
+      animation: fadeUp 1s ease-out forwards;
+      font-size: clamp(14px, 4vw, 18px);
+    }
+
+    .back-button {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: #ff4444;
+      padding: 12px 20px;
+      text-decoration: none;
+      color: white;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: clamp(14px, 4vw, 16px);
+      z-index: 1000;
+    }
+
+    .back-button:active {
+      background: #cc0000;
+      transform: scale(0.95);
+    }
+
+    @keyframes fadeUp {
+      0% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .game-container {
+        padding: 5px;
+      }
+
+      .controls button {
+        padding: 15px;
+      }
+
+      canvas {
+        margin-top: 50px;
+      }
+    }
+
+    @media (max-height: 600px) {
+      .game-container {
+        transform: scale(0.8);
+        transform-origin: top center;
+      }
+    }
+
+    /* Prevent text selection on buttons */
+    button, .back-button {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+<body>
+<a href="web2.html" class="back-button">Back to Lobby</a>
+<div class="game-container">
+  <div class="score-container">
+    <div class="score">Score: <span id="scoreValue">0</span></div>
+    <div class="high-score">High Score: <span id="highScoreValue">0</span></div>
+  </div>
+  <canvas width="400" height="400" id="game"></canvas>
+  <div class="controls">
+    <button ontouchstart="handleButton(37)" onmousedown="handleButton(37)">&larr;</button>
+    <button ontouchstart="handleButton(38)" onmousedown="handleButton(38)">&uarr;</button>
+    <button ontouchstart="handleButton(39)" onmousedown="handleButton(39)">&rarr;</button>
+    <div></div>
+    <button ontouchstart="handleButton(40)" onmousedown="handleButton(40)">&darr;</button>
+  </div>
+</div>
+
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+var grid = 16;
+var count = 0;
+var score = 0;
+var highScore = 0;
+
+// Prevent scrolling when touching the canvas
+canvas.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+});
+canvas.addEventListener('touchmove', function(e) {
+  e.preventDefault();
+});
+
+var snake = {
+  x: 160,
+  y: 160,
+  dx: grid,
+  dy: 0,
+  cells: [],
+  maxCells: 4
+};
+
+var apple = {
+  x: 320,
+  y: 320
+};
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function createScorePopup(x, y, points) {
+  const popup = document.createElement('div');
+  popup.className = 'score-popup';
+  popup.textContent = '+' + points;
+  popup.style.left = (canvas.offsetLeft + x) + 'px';
+  popup.style.top = (canvas.offsetTop + y) + 'px';
+  document.body.appendChild(popup);
+  setTimeout(() => popup.remove(), 1000);
+}
+
+function handleButton(keyCode) {
+  if (keyCode === 37 && snake.dx === 0) {
+    snake.dx = -grid;
+    snake.dy = 0;
+  }
+  else if (keyCode === 38 && snake.dy === 0) {
+    snake.dy = -grid;
+    snake.dx = 0;
+  }
+  else if (keyCode === 39 && snake.dx === 0) {
+    snake.dx = grid;
+    snake.dy = 0;
+  }
+  else if (keyCode === 40 && snake.dy === 0) {
+    snake.dy = grid;
+    snake.dx = 0;
+  }
+}
+
+function updateScore(points) {
+  score += points;
+  if (score > highScore) {
+    highScore = score;
+    document.getElementById('highScoreValue').textContent = highScore;
+  }
+  document.getElementById('scoreValue').textContent = score;
+}
+
+function resetGame() {
+  snake.x = 160;
+  snake.y = 160;
+  snake.cells = [];
+  snake.maxCells = 4;
+  snake.dx = grid;
+  snake.dy = 0;
+  apple.x = getRandomInt(0, 25) * grid;
+  apple.y = getRandomInt(0, 25) * grid;
+  score = 0;
+  document.getElementById('scoreValue').textContent = score;
+}
+
+function calculatePoints(snakeLength) {
+  return Math.floor(10 + (snakeLength / 5) * 5);
+}
+
+// Adjust canvas size based on window size
+function resizeCanvas() {
+  const container = canvas.parentElement;
+  const containerWidth = container.clientWidth;
+  const size = Math.min(containerWidth - 20, 400); // 20px padding
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function loop() {
+  requestAnimationFrame(loop);
+  if (++count < 4) {
+    return;
+  }
+  count = 0;
+  context.clearRect(0,0,canvas.width,canvas.height);
+
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+
+  if (snake.x < 0) {
+    snake.x = canvas.width - grid;
+  }
+  else if (snake.x >= canvas.width) {
+    snake.x = 0;
+  }
+
+  if (snake.y < 0) {
+    snake.y = canvas.height - grid;
+  }
+  else if (snake.y >= canvas.height) {
+    snake.y = 0;
+  }
+
+  snake.cells.unshift({x: snake.x, y: snake.y});
+
+  if (snake.cells.length > snake.maxCells) {
+    snake.cells.pop();
+  }
+
+  context.fillStyle = 'red';
+  context.fillRect(apple.x, apple.y, grid-1, grid-1);
+
+  context.fillStyle = 'green';
+  snake.cells.forEach(function(cell, index) {
+    context.fillRect(cell.x, cell.y, grid-1, grid-1);
+
+    if (cell.x === apple.x && cell.y === apple.y) {
+      snake.maxCells++;
+      const points = calculatePoints(snake.maxCells);
+      createScorePopup(cell.x, cell.y, points);
+      updateScore(points);
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+    }
+
+    for (var i = index + 1; i < snake.cells.length; i++) {
+      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+        resetGame();
+      }
+    }
+  });
+}
+
+document.addEventListener('keydown', function(e) {
+  handleButton(e.which);
+});
+
+// Prevent default touchmove behavior
+document.addEventListener('touchmove', function(e) {
+  e.preventDefault();
+}, { passive: false });
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
